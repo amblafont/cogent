@@ -877,12 +877,12 @@ lemma corres_let_put_boxed:
   assumes typing_put: "\<Xi>, [], \<Gamma>1 \<turnstile> Put (Var x) f (Var e) : TRecord (typ[f := (fst (typ!f), fst (snd (typ!f)), Present)]) sgl"
   assumes corres_cont: "\<And>\<sigma> s. corres srel y y' \<xi> ((\<gamma>!x) # \<gamma>) \<Xi> (Some (TRecord (typ[f := (fst (typ!f), fst (snd (typ!f)), Present)]) sgl) # \<Gamma>2) \<sigma> s"
   assumes x_boxed:
-  "\<And>fs ty r w r' w'.
+  "\<And>fs r w r' w'.
     \<lbrakk> (\<sigma>,s)\<in> srel
     ; \<sigma> p = Some (URecord fs, tyC)
     ; \<Xi>, \<sigma> \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r, w\<rangle>
     ; \<Xi>, \<sigma>(p := Some (URecord (fs [f := (\<gamma>!e,  snd (fs ! f))]), tyC)) \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r', w'\<rangle>
-    \<rbrakk> \<Longrightarrow> is_valid s x' \<and> (\<sigma>(p := Some (URecord (fs [f := (\<gamma>!e,  snd (fs ! f))]), ty)), h s) \<in> srel"
+    \<rbrakk> \<Longrightarrow> is_valid s x' \<and> (\<sigma>(p := Some (URecord (fs [f := (\<gamma>!e,  snd (fs ! f))]), tyC)), h s) \<in> srel"
   shows "corres srel
            (Let (Put (Var x) f (Var e)) y)
            (do _ \<leftarrow> guard (\<lambda>s. is_valid s x'); _ \<leftarrow> modify h; y' od) \<xi> \<gamma> \<Xi> \<Gamma> \<sigma> s"
@@ -1102,7 +1102,7 @@ lemma corres_put_boxed:
   assumes split\<Gamma>: "[] \<turnstile> \<Gamma> \<leadsto> \<Gamma>1 | \<Gamma>2"
   assumes typing_put: "\<Xi>, [], \<Gamma> \<turnstile> Put (Var x) f (Var e) : TRecord (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]) sgl"
   assumes x_boxed:
-  "\<And>fs ty r w r' w'.
+  "\<And>fs r w r' w'.
     \<lbrakk>(\<sigma>,s)\<in> srel; \<sigma> p = Some (URecord fs, tyC);
     \<Xi>, \<sigma> \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r, w\<rangle>;
     \<Xi>, \<sigma>(p := Some (URecord (fs [f := (\<gamma>!e, snd (fs ! f))]), tyC)) \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r', w'\<rangle>\<rbrakk> \<Longrightarrow>
@@ -1536,7 +1536,7 @@ lemma corres_member_boxed:
     "\<Gamma>'!x = Some (TRecord typ sigil)"
     "\<gamma> ! x = UPtr (ptr_val x') repr tyC"
     "\<Xi>', [], \<Gamma>' \<turnstile> Member (Var x) f : te'"
-    "\<And>fs ty r w. \<lbrakk>(\<sigma>, s)\<in> srel; \<sigma> (ptr_val x') = Some (URecord fs, tyC);
+    "\<And>fs r w. \<lbrakk>(\<sigma>, s)\<in> srel; \<sigma> (ptr_val x') = Some (URecord fs, tyC);
                \<Xi>', \<sigma> \<turnstile> UPtr (ptr_val x') repr tyC :u TRecord typ sigil \<langle>r, w\<rangle>\<rbrakk> \<Longrightarrow>
               is_valid' s x' \<and> val_rel (fst(fs!f)) ((f' s)::'bb::cogent_C_val)"
   shows "corres srel (Member (Var x) f)
@@ -1692,33 +1692,33 @@ definition
     \<Rightarrow> ('c :: cogent_C_val) ptr \<Rightarrow> bool"
 where
   "heap_rel_meta is_v hp \<sigma> h p \<equiv>
-   (\<forall>uv ty.
-     \<sigma> (ptr_val p) = Some (uv, ty) \<longrightarrow>
-     typ_name_itself TYPE('c) = ty \<longrightarrow>
+   (\<forall>uv tyC.
+     \<sigma> (ptr_val p) = Some (uv, tyC) \<longrightarrow>
+     typ_name_itself TYPE('c) = tyC \<longrightarrow>
      type_rel (uval_repr uv) TYPE('c) \<longrightarrow>
      is_v h p \<and> val_rel uv (hp h p))"
 
 lemma all_heap_rel_ptrD:
   "\<forall>(p :: 'a ptr). heap_rel_meta is_v hp \<sigma> h p
-    \<Longrightarrow> \<sigma> (ptr_val p) = Some (uv, ty)
-    \<Longrightarrow> typ_name_itself TYPE('a) = ty
+    \<Longrightarrow> \<sigma> (ptr_val p) = Some (uv, tyC)
+    \<Longrightarrow> typ_name_itself TYPE('a) = tyC
     \<Longrightarrow> type_rel (uval_repr uv) TYPE('a :: cogent_C_val)
     \<Longrightarrow> is_v h p \<and> val_rel uv (hp h (p :: 'a ptr))"
   by (clarsimp simp: heap_rel_meta_def)
 
 lemma all_heap_rel_updE:
   "\<forall>(p :: 'a ptr). heap_rel_meta is_v hp \<sigma> h p
-    \<Longrightarrow> \<sigma> (ptr_val x) = Some (uv, ty)
+    \<Longrightarrow> \<sigma> (ptr_val x) = Some (uv, tyC)
     \<Longrightarrow> uval_repr uv' = uval_repr uv
     \<Longrightarrow> \<forall>(p :: 'a ptr). ptr_val p \<noteq> ptr_val x \<longrightarrow> hp upd_h p = hp h p
     \<Longrightarrow> \<forall>(p :: 'a ptr). is_v upd_h p = is_v h p
     \<Longrightarrow>
-          typ_name_itself TYPE('a) = ty 
-     \<longrightarrow>       type_rel (uval_repr uv) (TYPE('a :: cogent_C_val))  
+          typ_name_itself TYPE('a) = tyC 
+     \<longrightarrow>  type_rel (uval_repr uv) (TYPE('a :: cogent_C_val))  
         \<longrightarrow> (\<forall>(p :: 'a ptr). ptr_val p = ptr_val x
            \<longrightarrow> is_v h p
            \<longrightarrow> val_rel uv' (hp upd_h p))
-    \<Longrightarrow> \<forall>(p :: 'a ptr). heap_rel_meta is_v hp (\<sigma>(ptr_val x \<mapsto> (uv', ty))) (upd_h) p"
+    \<Longrightarrow> \<forall>(p :: 'a ptr). heap_rel_meta is_v hp (\<sigma>(ptr_val x \<mapsto> (uv', tyC))) (upd_h) p"
   by (simp add: heap_rel_meta_def)
 
 definition
