@@ -32,7 +32,7 @@ fun mk_rhs_pro _ (field_info:HeapLiftBase.field_info list) =
     val_rel p2 (p2_C x))"} $ p1 $ p2
  end;
 
-fun mk_rhs_rec _ (field_info:HeapLiftBase.field_info list) =
+fun mk_rhs_rec _ ty_name (field_info:HeapLiftBase.field_info list) =
  (* val_rel generation for URecord *)
  let
   fun mk_nth_conjct n getter = @{term "val_rel"} $ (Const ("Product_Type.prod.fst", dummyT) $ Bound n) $ (getter $ @{term "x"}) |> strip_type;
@@ -43,14 +43,30 @@ fun mk_rhs_rec _ (field_info:HeapLiftBase.field_info list) =
 
   fun mk_Bound_list 0 = Const ("List.list.Nil", dummyT)
    |  mk_Bound_list n = Const ("List.list.Cons", dummyT) $ Bound (n-1) $ mk_Bound_list (n-1);
-
+  val len = field_info |> List.length
+  val ityC = len
   fun mk_fst_conjct n =
    Const ("HOL.eq",dummyT) $ Free ("uv", dummyT) $
-   (Const ("UpdateSemantics.uval.URecord", dummyT) $ mk_Bound_list n);
+   (Const ("UpdateSemantics.uval.URecord", dummyT) $ mk_Bound_list n
+   (* $ Bound n *) );
+(* peut etre pas necessaire ? *)
+  val snd_conjct = 
+    Const ("HOL.eq",dummyT) $ Bound ityC $
+(* TODO faire mieux *)
+     HOLogic.mk_string (ty_name ^ "_C")
+    (*(Const ("typ_name_itself", dummyT)
+     $ (Const ("Pure.type", Type ("itself", 
+        [Syntax.read_typ ctxt (ty_name ^ "_C")]
+     )))
+    )*)
  in
-  mk_exists (get_field_names field_info)
-  (HOLogic.mk_conj
-   (field_info |> List.length |> mk_fst_conjct, field_info |> get_getters |> mk_conjcts))
+  mk_exists ("tyC" :: get_field_names field_info )
+  ((* HOLogic.mk_conj *)
+   mk_HOL_conjs
+   [len |> mk_fst_conjct, 
+     snd_conjct, 
+    field_info |> get_getters |> mk_conjcts
+   ])
  end;
 
 fun mk_rhs_sum ctxt (field_info:HeapLiftBase.field_info list) =
@@ -87,14 +103,14 @@ fun gen_mk_rhs ctxt file_name uval =
   case uval of
     USum (ty_name  , _) => mk_rhs_sum ctxt (field_info ty_name)
   | UProduct ty_name    => mk_rhs_pro ctxt (field_info ty_name)
-  | URecord (ty_name,_) => mk_rhs_rec ctxt (field_info ty_name)
+  | URecord (ty_name,_) => mk_rhs_rec ctxt ty_name (field_info ty_name)
   | UAbstract _         => mk_rhs_abs
  end;
 
 in
 
 fun val_rel_def file_name uval ctxt =
- let
+ let  
   val ty_name = get_uval_name uval;
   val c_type  = Syntax.read_typ ctxt (ty_name ^ "_C");
   val lhs = @{term "val_rel"} $ Free ("uv", dummyT) $ Free("x",c_type);
