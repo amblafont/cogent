@@ -19,13 +19,13 @@ begin
 context update_sem begin
 
 inductive u_tt_sem_pres :: "('f \<Rightarrow> poly_type)
-                          \<Rightarrow> ('f,'a,'l) uabsfuns
+                          \<Rightarrow> ('f,'a,'l,'t) uabsfuns
                           \<Rightarrow> ('f,'a,'l) uval env
                           \<Rightarrow> kind env
                           \<Rightarrow> tree_ctx
                           \<Rightarrow> type
-                          \<Rightarrow> ('f,'a,'l) store \<times> 'f expr
-                          \<Rightarrow> ('f,'a,'l) store \<times> ('f,'a,'l) uval
+                          \<Rightarrow> ('f,'a,'l,'t) store \<times> 'f expr
+                          \<Rightarrow> ('f,'a,'l,'t) store \<times> ('f,'a,'l) uval
                           \<Rightarrow> bool"  ("_, _, _, _, _, _ T\<turnstile> _ \<Down>! _" [30,0,0,0,0,20] 60)
 where
   u_tt_sem_pres_default : "\<lbrakk> \<not> composite_anormal_expr x
@@ -66,7 +66,7 @@ where
 | u_tt_sem_pres_take    : "\<lbrakk> s = Boxed Writable l
                            ; ttsplit K \<Gamma> sps [] \<Gamma>1 [Some f_ty, Some (TRecord tak_fs s)] \<Gamma>2
                            ; \<Xi>, \<xi> , \<gamma>, K, \<Gamma>1, TRecord ts s T\<turnstile> (\<sigma>, x) \<Down>! (\<sigma>', UPtr p rp)
-                           ; \<sigma>' p = Some (URecord fs)
+                           ; \<sigma>' p = Some (URecord fs, ty)
                            ; \<Xi>, \<xi> , (fst (fs ! f) # UPtr p rp # \<gamma>), K, \<Gamma>2, \<tau> T\<turnstile> (\<sigma>', e) \<Down>! st
                            \<rbrakk> \<Longrightarrow> \<Xi>, \<xi> , \<gamma>, K, \<Gamma>, \<tau> T\<turnstile> (\<sigma>, Take x f e) \<Down>! st"
 
@@ -294,7 +294,7 @@ next
     qed simp+
   qed (simp add: composite_anormal_expr_def)
 next
-  case (u_sem_take \<xi> \<gamma> \<sigma> x \<sigma>'' p r' fs f e)
+  case (u_sem_take \<xi> \<gamma> \<sigma> x \<sigma>'' p r' fs ty f e)
 
   show ?case
     using u_sem_take.prems(1)
@@ -336,7 +336,7 @@ next
       where uptr_p_elim_lemmas:
         "w1' = insert p w1''"
         "\<Xi>, \<sigma>'' \<turnstile>* fs :ur ts \<langle>r1', w1''\<rangle>"
-        "\<sigma>'' p = Some (URecord fs)"
+        "\<sigma>'' p = Some (URecord fs, ty)"
         "r' = RRecord (map (type_repr \<circ> fst \<circ> snd) ts)"
         "distinct (map fst ts)"
         "s = Boxed Writable ptrl"

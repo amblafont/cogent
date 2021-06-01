@@ -691,7 +691,7 @@ lemma corres_take_boxed':
   assumes shareable_or_taken: "(S \<in> k \<or> taken = Taken)"
   assumes x_boxed:
     "\<And> fs r w.
-    \<lbrakk>(\<sigma>,s)\<in>srel; \<sigma> p = Some (URecord fs);
+    \<lbrakk>(\<sigma>,s)\<in>srel; \<sigma> p = Some (URecord fs, tyC);
     \<Xi>, \<sigma> \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r, w\<rangle>\<rbrakk> \<Longrightarrow>
       is_valid s x' \<and>
       corres srel e (e' (f' s)) \<xi> (fst(fs!f)# (\<gamma>!x)# \<gamma>) \<Xi> (Some (fst (snd (typ!f))) # Some (TRecord (typ [f := (fst (typ!f), fst (snd (typ!f)),taken)]) sgl) # \<Gamma>2) \<sigma> s"
@@ -718,7 +718,7 @@ proof -
     apply (rename_tac rrx')
     apply (insert split\<Gamma> val_rel_x)
     apply (erule uval_typing.cases, simp_all)
-    apply (rename_tac \<Xi>' \<sigma>' fs' typ' r' w' p')
+    apply (rename_tac \<Xi>' \<sigma>' fs' typ' r' w' ty' p')
     apply (drule(2) same_type_as_split_weakened_left)
     apply (frule(2) uval_typing_record_nth')
     apply clarsimp
@@ -795,7 +795,7 @@ lemma corres_take_boxed:
   assumes has_kind: "[] \<turnstile> fst (snd (typ!f)) :\<kappa> k"
   assumes shareable_or_taken: "S \<in> k \<or> taken = Taken"
   assumes x_boxed:
-  "\<And> fs r w. \<lbrakk>(\<sigma>, s)\<in> srel; \<sigma> p = Some (URecord fs); \<Xi>, \<sigma> \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r, w\<rangle>\<rbrakk> \<Longrightarrow>
+  "\<And> fs r w. \<lbrakk>(\<sigma>, s)\<in> srel; \<sigma> p = Some (URecord fs, tyC); \<Xi>, \<sigma> \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r, w\<rangle>\<rbrakk> \<Longrightarrow>
    is_valid s x' \<and> val_rel (fst(fs!f)) ((f' s)::'bb::cogent_C_val)"
   assumes corres_cont:
   "\<And>fsf f's. val_rel fsf (f's::'bb)  \<Longrightarrow>
@@ -877,12 +877,12 @@ lemma corres_let_put_boxed:
   assumes typing_put: "\<Xi>, [], \<Gamma>1 \<turnstile> Put (Var x) f (Var e) : TRecord (typ[f := (fst (typ!f), fst (snd (typ!f)), Present)]) sgl"
   assumes corres_cont: "\<And>\<sigma> s. corres srel y y' \<xi> ((\<gamma>!x) # \<gamma>) \<Xi> (Some (TRecord (typ[f := (fst (typ!f), fst (snd (typ!f)), Present)]) sgl) # \<Gamma>2) \<sigma> s"
   assumes x_boxed:
-  "\<And>fs r w r' w'.
+  "\<And>fs ty r w r' w'.
     \<lbrakk> (\<sigma>,s)\<in> srel
-    ; \<sigma> p = Some (URecord fs)
+    ; \<sigma> p = Some (URecord fs, tyC)
     ; \<Xi>, \<sigma> \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r, w\<rangle>
-    ; \<Xi>, \<sigma>(p := Some (URecord (fs [f := (\<gamma>!e,  snd (fs ! f))]))) \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r', w'\<rangle>
-    \<rbrakk> \<Longrightarrow> is_valid s x' \<and> (\<sigma>(p := Some (URecord (fs [f := (\<gamma>!e,  snd (fs ! f))]))), h s) \<in> srel"
+    ; \<Xi>, \<sigma>(p := Some (URecord (fs [f := (\<gamma>!e,  snd (fs ! f))]), tyC)) \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r', w'\<rangle>
+    \<rbrakk> \<Longrightarrow> is_valid s x' \<and> (\<sigma>(p := Some (URecord (fs [f := (\<gamma>!e,  snd (fs ! f))]), ty)), h s) \<in> srel"
   shows "corres srel
            (Let (Put (Var x) f (Var e)) y)
            (do _ \<leftarrow> guard (\<lambda>s. is_valid s x'); _ \<leftarrow> modify h; y' od) \<xi> \<gamma> \<Xi> \<Gamma> \<sigma> s"
@@ -968,7 +968,7 @@ proof (clarsimp simp: corres_def in_monad snd_bind snd_modify snd_state_assert, 
       "repr = RRecord (map (\<lambda>(n, t, b). type_repr t) typ)"
       "w13p = insert p w13"
       "\<Xi>, \<sigma> \<turnstile>* fs :ur typ \<langle>r13', w13\<rangle>"
-      "\<sigma> p = Some (URecord fs)"
+      "\<sigma> p = Some (URecord fs, tyC)"
       "p \<notin> w13"
       "p \<notin> r13'"
     using use\<Gamma>3'_lemmas(2) typing_put_elim_lems
@@ -979,9 +979,9 @@ proof (clarsimp simp: corres_def in_monad snd_bind snd_modify snd_state_assert, 
     by metis
   then obtain r1' w1p'
     where preserve_mono_on_put_lemmas:
-      "\<Xi>, \<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])) \<turnstile> UPtr p repr tyC :u TRecord (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]) sgl \<langle>r1', w1p'\<rangle>"
+      "\<Xi>, \<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)) \<turnstile> UPtr p repr tyC :u TRecord (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]) sgl \<langle>r1', w1p'\<rangle>"
       "r1' \<subseteq> r1"
-      "frame \<sigma> w1 (\<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]))) w1p'"
+      "frame \<sigma> w1 (\<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC))) w1p'"
     using preservation_mono(1)[OF _ _ _ u_sem_put[OF _ _ u_sem_var] typing_put]
       assms' split\<Gamma>_lemmas uval_typing1_elim_lemmas \<gamma>_x u_sem_var sigil_wr
     by metis
@@ -989,7 +989,7 @@ proof (clarsimp simp: corres_def in_monad snd_bind snd_modify snd_state_assert, 
   obtain w1' ptrl
     where rec_elim1_lemmas:
         "w1p' = insert p w1'"
-        "\<Xi>, \<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])) \<turnstile>* (fs[f := (\<gamma> ! e, snd (fs ! f))]) :ur typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)] \<langle>r1', w1'\<rangle>"
+        "\<Xi>, \<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)) \<turnstile>* (fs[f := (\<gamma> ! e, snd (fs ! f))]) :ur typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)] \<langle>r1', w1'\<rangle>"
         "distinct (map fst (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]))"
         "repr = RRecord (map (type_repr \<circ> fst \<circ> snd) (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]))"
         "sgl = Boxed Writable ptrl"
@@ -1002,12 +1002,12 @@ proof (clarsimp simp: corres_def in_monad snd_bind snd_modify snd_state_assert, 
     where taken_field1_lemmas:
       "r1'' \<subseteq> r1'"
       "w1'' \<subseteq> w1'"
-      "\<Xi>, \<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])) \<turnstile>* fs[f := (\<gamma> ! e, snd (fs ! f))] :ur typ \<langle>r1'', w1''\<rangle>"
+      "\<Xi>, \<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)) \<turnstile>* fs[f := (\<gamma> ! e, snd (fs ! f))] :ur typ \<langle>r1'', w1''\<rangle>"
     using uval_typing_taken_field[where f=f and t="fst (snd (typ ! f))" and taken=taken and k=k, OF rec_elim1_lemmas(2)]
       typing_put_elim_lems
     by fastforce
 
-  then have "\<Xi>, \<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])) \<turnstile>
+  then have "\<Xi>, \<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)) \<turnstile>
               UPtr p (RRecord (map (type_repr \<circ> fst \<circ> snd) (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]))) tyC :u
               TRecord typ (Boxed Writable ptrl)
             \<langle>r1'', insert p w1''\<rangle>"
@@ -1023,18 +1023,18 @@ proof (clarsimp simp: corres_def in_monad snd_bind snd_modify snd_state_assert, 
 
   then have x_boxed_lemmas:
     "is_valid s x'"
-    "(\<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])), h s) \<in> srel"
+    "(\<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)), h s) \<in> srel"
     using x_boxed assms' uval_typing1_elim_lemmas \<gamma>_x rec_elim1_lemmas use\<Gamma>3'_lemmas
     by metis+
 
   have upd_matches2:
-    "\<Xi>, \<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])) \<turnstile> \<gamma> ! x # \<gamma> matches Some (TRecord (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]) sgl) # \<Gamma>2 \<langle>r1' \<union> r2, (insert p w1') \<union> w2\<rangle>"
+    "\<Xi>, \<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)) \<turnstile> \<gamma> ! x # \<gamma> matches Some (TRecord (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]) sgl) # \<Gamma>2 \<langle>r1' \<union> r2, (insert p w1') \<union> w2\<rangle>"
   proof (intro matches_ptrs_some)
-    show "\<Xi>, \<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])) \<turnstile> \<gamma> ! x :u TRecord (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]) sgl \<langle>r1', insert p w1'\<rangle>"
+    show "\<Xi>, \<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)) \<turnstile> \<gamma> ! x :u TRecord (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]) sgl \<langle>r1', insert p w1'\<rangle>"
       using preserve_mono_on_put_lemmas rec_elim1_lemmas sigil_wr \<gamma>_x
       by argo
   next
-    show "\<Xi>, \<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])) \<turnstile> \<gamma> matches \<Gamma>2 \<langle>r2, w2\<rangle>"
+    show "\<Xi>, \<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)) \<turnstile> \<gamma> matches \<Gamma>2 \<langle>r2, w2\<rangle>"
       using matches_ptrs_frame[where r=r2 and w=w2]
       using split\<Gamma>_lemmas preserve_mono_on_put_lemmas w_r_noalias
       by fast
@@ -1054,7 +1054,7 @@ proof (clarsimp simp: corres_def in_monad snd_bind snd_modify snd_state_assert, 
 
   have smaller_corres:
     "\<not> snd (y' (h s))"
-    "\<And>r' s'. (r', s') \<in> fst (y' (h s)) \<Longrightarrow> \<exists>\<sigma>' r. \<xi>, \<gamma> ! x # \<gamma> \<turnstile> (\<sigma>(p \<mapsto> URecord (fs[f := (\<gamma> ! e, snd (fs ! f))])), y) \<Down>! (\<sigma>', r) \<and> (\<sigma>', s') \<in> srel \<and> val_rel r r'"
+    "\<And>r' s'. (r', s') \<in> fst (y' (h s)) \<Longrightarrow> \<exists>\<sigma>' r. \<xi>, \<gamma> ! x # \<gamma> \<turnstile> (\<sigma>(p \<mapsto> (URecord (fs[f := (\<gamma> ! e, snd (fs ! f))]), tyC)), y) \<Down>! (\<sigma>', r) \<and> (\<sigma>', s') \<in> srel \<and> val_rel r r'"
     using corres_cont[unfolded corres_def] assms' upd_matches2 x_boxed_lemmas
     by fast+
 
@@ -1089,10 +1089,10 @@ qed
 
 lemma u_sem_put':
   "\<xi>', \<gamma>' \<turnstile> (\<sigma>', x) \<Down>! (\<sigma>'', r) \<Longrightarrow>
-   \<sigma>'' p = Some (URecord fs) \<Longrightarrow>
+   \<sigma>'' p = Some (URecord fs, tyC) \<Longrightarrow>
    r = UPtr p repr tyC \<Longrightarrow>
    \<xi>', \<gamma>' \<turnstile> (\<sigma>'', e) \<Down>! (\<sigma>''', e') \<Longrightarrow>
-   \<xi>', \<gamma>' \<turnstile> (\<sigma>', Put x f e) \<Down>! (\<sigma>'''(p \<mapsto> URecord (fs[f := (e', snd (fs ! f))])), r)"
+   \<xi>', \<gamma>' \<turnstile> (\<sigma>', Put x f e) \<Down>! (\<sigma>'''(p \<mapsto> (URecord (fs[f := (e', snd (fs ! f))]), tyC)), r)"
   by (auto intro: u_sem_put)
 
 lemma corres_put_boxed:
@@ -1102,11 +1102,11 @@ lemma corres_put_boxed:
   assumes split\<Gamma>: "[] \<turnstile> \<Gamma> \<leadsto> \<Gamma>1 | \<Gamma>2"
   assumes typing_put: "\<Xi>, [], \<Gamma> \<turnstile> Put (Var x) f (Var e) : TRecord (typ[f := (fst (typ ! f), fst (snd (typ ! f)), Present)]) sgl"
   assumes x_boxed:
-  "\<And>fs r w r' w'.
-    \<lbrakk>(\<sigma>,s)\<in> srel; \<sigma> p = Some (URecord fs);
+  "\<And>fs ty r w r' w'.
+    \<lbrakk>(\<sigma>,s)\<in> srel; \<sigma> p = Some (URecord fs, tyC);
     \<Xi>, \<sigma> \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r, w\<rangle>;
-    \<Xi>, \<sigma>(p := Some (URecord (fs [f := (\<gamma>!e, snd (fs ! f))]))) \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r', w'\<rangle>\<rbrakk> \<Longrightarrow>
-   is_valid s x' \<and> val_rel (UPtr p repr tyC) x' \<and> (\<sigma>(p := Some (URecord (fs [f := (\<gamma>!e, snd (fs ! f))]))), h s) \<in> srel"
+    \<Xi>, \<sigma>(p := Some (URecord (fs [f := (\<gamma>!e, snd (fs ! f))]), tyC)) \<turnstile> UPtr p repr tyC :u TRecord typ sgl \<langle>r', w'\<rangle>\<rbrakk> \<Longrightarrow>
+   is_valid s x' \<and> val_rel (UPtr p repr tyC) x' \<and> (\<sigma>(p := Some (URecord (fs [f := (\<gamma>!e, snd (fs ! f))]), tyC)), h s) \<in> srel"
   shows "corres srel
            (Put (Var x) f (Var e))
            (do _ \<leftarrow> guard (\<lambda>s. is_valid s x'); _ \<leftarrow> modify h; gets (\<lambda>_. x') od) \<xi> \<gamma> \<Xi> \<Gamma> \<sigma> s"
@@ -1149,7 +1149,7 @@ lemma corres_put_boxed:
     apply argo
    apply force
   apply clarsimp
-  apply (rule_tac x="\<sigma>(p := Some (URecord (fs [f := (\<gamma>!e, snd (fs ! f))])))" in exI)
+  apply (rule_tac x="\<sigma>(p := Some (URecord (fs [f := (\<gamma>!e, snd (fs ! f))]), tyC))" in exI)
   apply (rule_tac x="\<gamma> ! x" in exI)
   apply (rule conjI)
    apply (rule u_sem_put')
@@ -1536,7 +1536,7 @@ lemma corres_member_boxed:
     "\<Gamma>'!x = Some (TRecord typ sigil)"
     "\<gamma> ! x = UPtr (ptr_val x') repr tyC"
     "\<Xi>', [], \<Gamma>' \<turnstile> Member (Var x) f : te'"
-    "\<And>fs r w. \<lbrakk>(\<sigma>, s)\<in> srel; \<sigma> (ptr_val x') = Some (URecord fs);
+    "\<And>fs ty r w. \<lbrakk>(\<sigma>, s)\<in> srel; \<sigma> (ptr_val x') = Some (URecord fs, tyC);
                \<Xi>', \<sigma> \<turnstile> UPtr (ptr_val x') repr tyC :u TRecord typ sigil \<langle>r, w\<rangle>\<rbrakk> \<Longrightarrow>
               is_valid' s x' \<and> val_rel (fst(fs!f)) ((f' s)::'bb::cogent_C_val)"
   shows "corres srel (Member (Var x) f)
@@ -1692,29 +1692,33 @@ definition
     \<Rightarrow> ('c :: cogent_C_val) ptr \<Rightarrow> bool"
 where
   "heap_rel_meta is_v hp \<sigma> h p \<equiv>
-   (\<forall>uv.
-     \<sigma> (ptr_val p) = Some uv \<longrightarrow>
+   (\<forall>uv ty.
+     \<sigma> (ptr_val p) = Some (uv, ty) \<longrightarrow>
+     typ_name_itself TYPE('c) = ty \<longrightarrow>
      type_rel (uval_repr uv) TYPE('c) \<longrightarrow>
      is_v h p \<and> val_rel uv (hp h p))"
 
 lemma all_heap_rel_ptrD:
   "\<forall>(p :: 'a ptr). heap_rel_meta is_v hp \<sigma> h p
-    \<Longrightarrow> \<sigma> (ptr_val p) = Some uv
+    \<Longrightarrow> \<sigma> (ptr_val p) = Some (uv, ty)
+    \<Longrightarrow> typ_name_itself TYPE('a) = ty
     \<Longrightarrow> type_rel (uval_repr uv) TYPE('a :: cogent_C_val)
     \<Longrightarrow> is_v h p \<and> val_rel uv (hp h (p :: 'a ptr))"
   by (clarsimp simp: heap_rel_meta_def)
 
 lemma all_heap_rel_updE:
   "\<forall>(p :: 'a ptr). heap_rel_meta is_v hp \<sigma> h p
-    \<Longrightarrow> \<sigma> (ptr_val x) = Some uv
+    \<Longrightarrow> \<sigma> (ptr_val x) = Some (uv, ty)
     \<Longrightarrow> uval_repr uv' = uval_repr uv
     \<Longrightarrow> \<forall>(p :: 'a ptr). ptr_val p \<noteq> ptr_val x \<longrightarrow> hp upd_h p = hp h p
     \<Longrightarrow> \<forall>(p :: 'a ptr). is_v upd_h p = is_v h p
-    \<Longrightarrow> type_rel (uval_repr uv) (TYPE('a :: cogent_C_val))
+    \<Longrightarrow>
+          typ_name_itself TYPE('a) = ty 
+     \<longrightarrow>       type_rel (uval_repr uv) (TYPE('a :: cogent_C_val))  
         \<longrightarrow> (\<forall>(p :: 'a ptr). ptr_val p = ptr_val x
            \<longrightarrow> is_v h p
            \<longrightarrow> val_rel uv' (hp upd_h p))
-    \<Longrightarrow> \<forall>(p :: 'a ptr). heap_rel_meta is_v hp (\<sigma>(ptr_val x \<mapsto> uv')) (upd_h) p"
+    \<Longrightarrow> \<forall>(p :: 'a ptr). heap_rel_meta is_v hp (\<sigma>(ptr_val x \<mapsto> (uv', ty))) (upd_h) p"
   by (simp add: heap_rel_meta_def)
 
 definition
