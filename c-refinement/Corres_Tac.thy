@@ -1000,7 +1000,7 @@ fun define_uabsfuns (defs : string list list) ctxt : ((term * (string * thm)) li
   fun define _ [] ctxt = ([], ctxt)
     | define n (absfuns::defs') ctxt = let
         val name = "\<xi>_" ^ string_of_int n
-        val typ = @{typ "(funtyp, abstyp, ptrtyp) uabsfuns"}
+        val typ = @{typ "(funtyp, abstyp, ptrtyp, ctyp) uabsfuns"}
         val rhs = Const (@{const_name undefined}, typ) (* FIXME *)
         val (thm, ctxt) = Specification.definition
               NONE [] [] ((Binding.name (name ^ "_def"), []),
