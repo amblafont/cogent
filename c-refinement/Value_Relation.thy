@@ -28,6 +28,7 @@ type_synonym funtyp = "char list"
 type_synonym abstyp = unit
 
 type_synonym ptrtyp = addr
+type_synonym ctyp = string
 
 
 (* Mechanism to get different instances of cogent_C_val for signed and unsigned words. *)
