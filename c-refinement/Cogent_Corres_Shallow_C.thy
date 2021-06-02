@@ -61,9 +61,9 @@ definition val_rel_shallow_C where
      (v\<^sub>s :: 'sv)
      (v\<^sub>C :: 'cv :: cogent_C_val)
      (v\<^sub>p :: (funtyp, 'b) vval)
-     (v\<^sub>u\<^sub>m :: (funtyp, abstyp, ptrtyp) uval)
+     (v\<^sub>u\<^sub>m :: (funtyp, abstyp, ptrtyp, ctyp) uval)
      (\<xi>\<^sub>p :: (funtyp, 'b) vabsfuns)
-     (\<sigma> :: (funtyp, abstyp, ptrtyp) store)
+     (\<sigma> :: (funtyp, abstyp, ptrtyp, ctyp) store)
      (\<Xi>\<^sub>m :: funtyp \<Rightarrow> poly_type) \<equiv>
   \<exists>\<tau> r w.
     valRel \<xi>\<^sub>p v\<^sub>s v\<^sub>p \<and>                         
@@ -79,18 +79,18 @@ lemma val_rel_shallow_C_elim:
 definition corres_shallow_C where
   "corres_shallow_C
      (rename :: funtyp \<times> type list \<times> ptr_layout list \<Rightarrow> funtyp)
-     (srel :: ((funtyp, abstyp, ptrtyp) store \<times> 's) set)
+     (srel :: ((funtyp, abstyp, ptrtyp, ctyp) store \<times> 's) set)
      (v\<^sub>s :: 'sv)
      (prog\<^sub>m :: funtyp expr)
      (prog\<^sub>C :: ('s, 'cv :: cogent_C_val) nondet_monad)
-     (\<xi>\<^sub>u\<^sub>m :: (funtyp, abstyp, ptrtyp) uabsfuns)
+     (\<xi>\<^sub>u\<^sub>m :: (funtyp, abstyp, ptrtyp, ctyp) uabsfuns)
      (\<xi>\<^sub>v\<^sub>m :: (funtyp, 'b) vabsfuns)
      (\<xi>\<^sub>v\<^sub>p :: (funtyp, 'b) vabsfuns)
-     (\<gamma>\<^sub>u\<^sub>m :: (funtyp, abstyp, ptrtyp) uval env)
+     (\<gamma>\<^sub>u\<^sub>m :: (funtyp, abstyp, ptrtyp, ctyp) uval env)
      (\<gamma>\<^sub>v\<^sub>m :: (funtyp, 'b) vval env)
      (\<Xi>\<^sub>m :: funtyp \<Rightarrow> poly_type)
      (\<Gamma>\<^sub>m :: ctx)
-     (\<sigma> :: (funtyp, abstyp, ptrtyp) store)
+     (\<sigma> :: (funtyp, abstyp, ptrtyp, ctyp) store)
      (s :: 's) \<equiv>
    proc_ctx_wellformed \<Xi>\<^sub>m \<longrightarrow>
    (\<xi>\<^sub>u\<^sub>m \<sim> \<xi>\<^sub>v\<^sub>m matches-u-v \<Xi>\<^sub>m) \<longrightarrow>

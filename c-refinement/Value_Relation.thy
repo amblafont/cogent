@@ -28,6 +28,7 @@ type_synonym funtyp = "char list"
 type_synonym abstyp = unit
 
 type_synonym ptrtyp = addr
+type_synonym ctyp = string
 
 
 (* Mechanism to get different instances of cogent_C_val for signed and unsigned words. *)
@@ -52,13 +53,13 @@ instantiation bit1 :: (type) knows_sign begin
 end
 
 class cogent_C_val = c_type +
-  fixes val_rel :: "(funtyp, abstyp, ptrtyp) uval \<Rightarrow>'a \<Rightarrow> bool"
+  fixes val_rel :: "(funtyp, abstyp, ptrtyp, ctyp) uval \<Rightarrow>'a \<Rightarrow> bool"
   fixes type_rel :: "repr \<Rightarrow> 'a itself \<Rightarrow> bool"
 
 (* The signed word relation is the relation for function tags, so we can only
  * define it after reading the program.
  * Here is a hack to defer this task. *)
-consts cogent_function_val_rel :: "(funtyp, abstyp, ptrtyp) uval \<Rightarrow> int \<Rightarrow> bool"
+consts cogent_function_val_rel :: "(funtyp, abstyp, ptrtyp, ctyp) uval \<Rightarrow> int \<Rightarrow> bool"
 consts cogent_function_type_rel :: "repr \<Rightarrow> 'a word itself \<Rightarrow> bool"
 
 instantiation word :: ("{len8, knows_sign}") cogent_C_val
@@ -114,7 +115,7 @@ end
 instantiation ptr :: (cogent_C_val) cogent_C_val
 begin
   definition val_rel_ptr_def:
-    "val_rel uv (x :: 'a ptr) \<equiv> \<exists>repr. uv = (UPtr (ptr_val x) repr)"
+    "val_rel uv (x :: 'a ptr) \<equiv> \<exists>repr. uv = (UPtr (ptr_val x) repr (typ_name_itself (TYPE('a))))"
    (* "val_rel uv (x :: 'a ptr) \<equiv> \<exists>repr ptrl. uv = (UPtr (ptr_val x) repr ptrl) \<and> type_rel repr TYPE('a)" *)
   definition type_rel_ptr_def:
     "type_rel typ (_:: 'a ptr itself) \<equiv> \<exists>repr. typ = RPtr repr \<and> type_rel repr TYPE('a)"
